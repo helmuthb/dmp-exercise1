@@ -1,0 +1,289 @@
+---
+title: "Comparing US Wheat Yield with Middle-Aged Marriages in Salzburg"
+author: "Helmuth Breitenfellner"
+date: "19.04.2019"
+output:
+  pdf_document:
+classoption: "10pt"
+subtitle: "Data Experiment for Data Stewardship"
+header-includes:
+- \usepackage{fancyhdr}
+- \usepackage{lastpage}
+- \usepackage{multicol}
+- \pagestyle{fancy}
+- \lhead{Helmuth Breitenfellner}
+- \chead{}
+- \lhead{https://orcid.org/0000-0003-4523-0945}
+- \rhead{Helmuth Breitenfellner}
+- \rfoot{Page \thepage{} of \pageref{LastPage}}
+- \renewcommand{\footrulewidth}{0.4pt}
+- \lfoot{Data Stewardship}
+- \cfoot{}
+- \newcommand{\twocolstart}{\begin{multicols}{2}}
+- \newcommand{\twocolend}{\end{multicols}}
+- \newcommand{\abstractstart}{\begin{abstract}}
+- \newcommand{\abstractend}{\end{abstract}}
+bibliography: references.bib
+---
+\abstractstart
+This paper analyses the correlation between yield
+of wheat in the United States on one side,
+and the number of marriages by middle-aged (35-44)
+men and women in Salzburg.
+
+The source of the project can be found on GitHub:
+https://github.com/helmuthb/dmp-exercise1.
+All software and the report is licensed under MIT license.
+The data is licensed as by the data providers.
+
+* CC0: US Wheat Production Timetable [@wheat2019]
+* CC BY 4.0: Age of partners at marriage [@salzburg2019]
+
+This data experiment is the result of exercise 1
+of the lecture "Data Stewardship".
+\vspace{5mm}
+
+\abstractend
+\twocolstart
+
+# Data Gathering
+
+The data for [@salzburg2019] is available for
+download from the Austrian
+Data portal (https://www.data.gv.at),
+and the data for [@wheat2019] from the US
+Department of Agriculture, Economic Research
+Service (https://www.ers.usda.gov/).
+
+They have been downloaded and are available as part
+of the repository in the folder `data/source`.
+
+# Data Processing
+
+The data from Salzburg is available in CSV or JSON
+format. For the purpose of this experiment the CSV
+version has been taken.
+
+The data from the USDA is available as an Excel sheet.
+
+For processing of the data the language $R$ is used,
+which allows both reading of various data sources,
+statistical analysis (like cross correlation), and
+plotting of data for visual analysis and comparison.
+
+The data files are read in, using `read.csv2` for
+[@salzburg2019] and `read_excel` for [@wheat2019].
+
+For [@salzburg2019] the age classes are transformed
+into numerical values (the lowest age in each class),
+and the two columns `wives` and `husbands` are
+re-arranged as two lines with one column `spouses`
+and `gender` ("female" or "male").
+The age range is then filter for the range of
+interest (35-44 years) and added up.
+
+For [@wheat2019] only a range of the second sheet
+is read (the region corresponding to wheat).
+The field `year` is adjusted to numerical values.
+Originally it contained always two consecutive
+years, like 1972/1973, to indicate the harvest
+season.
+After the adjustment it contains only the second year.
+
+The two data sets were then merged by `year` and stored
+as a CSV file in `data/processed/us-wheat-sbg-marriages.csv`.
+
+```{r,include=FALSE}
+library(readxl)
+
+# read data from Salzburg
+salzburg <- read.csv2("data/source/marriage-szg-sex-age.csv",
+                      stringsAsFactors = TRUE,
+                      colClasses =
+    c("NULL", "NULL", "factor", rep("numeric", 3) ),
+                      col.names =
+    c("NULL", "NULL", "age", "year", "wives", "husbands"),
+                      skip = 2)
+
+
+# adjust age levels: instead of long strings take
+# youngest age of class
+levels(salzburg$age) <- c(15, 20, 25, 30, 35,
+                          40, 45, 50, 55, 60,
+                          65, 70)
+# and convert to integer
+salzburg$age <- as.numeric(as.character(salzburg$age))
+
+# sum up middle-aged (35-44) wives & husbands
+library(dplyr)
+
+salzburg <- salzburg %>%
+  filter(age >= 35 & age <= 44) %>%
+  group_by(year) %>%
+  summarize(wives = sum(wives),
+            husbands = sum(husbands))
+
+# Reshape: one column "spouses", with
+# a flag "gender" for husband or wife
+wives <- data.frame(year = salzburg$year,
+                    spouses = salzburg$wives,
+                    gender = "female")
+husbands <- data.frame(year = salzburg$year,
+                       spouses = salzburg$husbands,
+                       gender = "male")
+
+salzburg <- rbind(wives, husbands)
+
+# read data from USDA
+wheat <- read_excel("data/source/Wheat_Data-All_Years.xls",
+                    sheet = 2,
+                    range = "B5:G157",
+                    col_names =
+    c("year", "a_p", "a_h", "production", "yield", "p"),
+                    na = "--")
+# adjust year column to numeric
+# since the source has yyyy/yyyy+1 as season, the
+# value is taken as yyyy+1
+wheat$year = as.numeric(substr(wheat$year, 1, 4)) + 1
+
+# merge data by year
+combined <- merge(salzburg, wheat, by = "year")
+
+# write data file back as CSV
+write.csv(combined, "output/us-wheat-sbg-marriages.csv")
+
+# split male and female for easier analysis
+male <- combined %>%
+  filter(gender == "male")
+female <- combined %>%
+  filter(gender == "female")
+```
+
+# Data Visualization
+
+```{r, include=FALSE}
+options(digits = 3)
+```
+```{r,echo=FALSE}
+# Plot spouses vs yield
+library(ggplot2)
+combined %>%
+  ggplot(aes(x = yield, y = spouses, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+The previous plot shows wheat yield in comparison to
+weddings in Salzburg.
+The corresponding linear regression line has been
+added for enhanced visualization.
+
+More specifically, looking at the correlation
+coefficient between husbands in the middle age range
+(35 - 44 years) and wheat yield gives a coefficient
+of `r cor(female$spouses, female$yield)` for women
+and `r cor(male$spouses, male$yield)` for men.
+
+This indicates a high level of correlation.
+
+# Technical Description of Experiment
+
+The following $R$ packages have been used in this
+data experiment:
+
+* `readxl` - for reading Excel sheet
+* `dplyr` - for data manipulation
+* `ggplot2` - for graphical plots
+* `DiagrammeR` - for UML diagrams
+* `DiagrammeRsvg` - for UML diagrams
+* `rsvg` - for including UML diagrams
+
+The following chart shows the steps of the experiment:
+
+```{r,echo=FALSE}
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(rsvg)
+library(knitr)
+uml <- DiagrammeR::grViz("
+digraph {
+	  # Nodes
+	  node [shape = diamond]
+    salzburg [shape = rectangle, label = 'Marriages Salzburg']
+    wheat[shape = rectangle, label = 'Wheat US']
+    salzburg_processing[label = 'Data Reshape']
+    wheat_processing[label = 'Range Selection']
+    merging[label = 'Data Merging']
+    merged[shape = rectangle, label = 'Merged Dataset']
+    packages[label = 'R Packages']
+    plot[shape = rectangle, label = 'Correlation Plot']
+
+	  # Edges
+	  edge [color = black,
+	        arrowhead = vee]
+	  rankdir = TD
+	  wheat->wheat_processing [label = 'Input']
+	  salzburg->salzburg_processing [label = 'Input']
+	  wheat_processing->merging
+	  salzburg_processing->merging
+    merging->merged
+    merged->packages
+    packages->plot
+
+	{rank=same; wheat; salzburg}
+	{rank=same; wheat_processing; salzburg_processing}
+	{rank=same; merging; merged}
+  {rank=same; packages; plot}
+	}
+")
+tmp <- capture.output(rsvg_pdf(charToRaw(export_svg(uml)), 'uml.pdf'))
+include_graphics("uml.pdf")
+```
+
+A `Dockerfile` is provided together with the required $R$ packages
+and the
+\LaTeX
+libraries used for creating this report.
+The Docker image is created on Docker Hub and can be used pre-compiled.
+
+# Further Analysis
+
+Clearly one can hardly explain this correlation
+between marriages in Salzburg and wheat yield
+in the United States.
+So what is the reason for this correlation then?
+
+When looking through the data set more in detail,
+it becomes obvious that the actual correlation
+is in the year.
+Both the yield of wheat in the United States
+is increasing, as is the number of marriages of
+middle-aged persons in Salzburg.
+
+These correlations are even stronger, the corresponding
+coefficients are
+`r cor(female$spouses, female$year)` for women,
+`r cor(male$spouses, male$year)` for men, and
+`r cor(male$yield, male$year)` for wheat yield.
+
+```{r,echo=FALSE}
+# Plot yield vs year
+library(ggplot2)
+combined %>%
+  ggplot(aes(x = year, y = yield)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+```{r,echo=FALSE}
+# Plot spouses vs year
+library(ggplot2)
+combined %>%
+  ggplot(aes(x = year, y = spouses, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+\twocolend
+
+# References

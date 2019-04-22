@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dc:title>US Wheat Yield vs. Salzburg Middle-Aged Marriages</dc:title>
+<dc:creator>Helmuth Breitenfellner (https://orcid.org/0000-0003-4523-0945)</dc:creator>
+<dc:subject>Correlation of US Wheat Yield and Salzburg Middle-Aged Marriages, 1973-2014</dc:subject>
+<dc:description>Investigation of the correlation between the US wheat yield and the marriages of middle-aged spouses in Salzburg between 1972 and 2014.</dc:description>
+<dc:date>21.04.2019</dc:date>
+<dc:type>DataGeneration</dc:type>
+<dc:format>R Markdown</dc:format>
+<dc:format>text/csv</dc:format>
+<dc:format>application/vnd.ms-excel</dc:format>
+<dc:source>US Wheat Yield: USDA. (2019)</dc:source>
+<dc:source>Salzburg Marriages: Statistik Salzburg (2019)</dc:source>
+<dc:language>eng</dc:language>
+<dc:coverage>1973 - 2014</dc:coverage>
+<dc:rights>CC BY 4.0</dc:rights>
+</metadata>

@@ -1,0 +1,15 @@
+#! /bin/sh
+
+PKGLIST=
+for package in visNetwork gridExtra viridis Rook \
+               rgexf influenceR downloader DiagrammeR \
+               V8 DiagrammeRsvg rsvg
+do
+  FILE=`echo src/r-packages/${package}_*`
+  if [ -n "$PKGLIST" ]
+  then
+    PKGLIST="$PKGLIST, "
+  fi
+  PKGLIST="$PKGLIST'$FILE'"
+done
+R -e "install.packages(c($PKGLIST), repos = NULL)"

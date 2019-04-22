@@ -1,0 +1,5 @@
+#! /bin/sh
+
+tlmgr install --file src/latex-packages/fancyhdr.tar.xz 
+tlmgr install --file src/latex-packages/lastpage.tar.xz
+
