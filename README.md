@@ -1,4 +1,4 @@
-https://zenodo.org/badge/DOI/10.5281/zenodo.2648326.svg
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2648326.svg)](https://zenodo.org/badge/latestdoi/2648326)
 
 # Data Management Plan - Data Experiment
 
